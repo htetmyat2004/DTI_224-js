@@ -1,0 +1,25 @@
+{
+  "name": "DTI 224 - JS Assignments",
+  "short_name": "DTI224",
+  "description": "A collection of JavaScript mini-programs: measurement converter, grading system, change calculator, and distance calculator.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#2b6e77",
+  "theme_color": "#0f6e56",
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

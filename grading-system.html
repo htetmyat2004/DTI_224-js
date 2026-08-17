@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#764ba2">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Student Grading System</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 20px;
+  }
+
+  .card {
+    background: #fff;
+    width: 100%;
+    max-width: 420px;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  }
+
+  h1 {
+    text-align: center;
+    color: #333;
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+
+  p.subtitle {
+    text-align: center;
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  label {
+    display: block;
+    font-size: 14px;
+    color: #444;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  input[type="text"],
+  input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    margin-bottom: 18px;
+    transition: border-color 0.2s;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: #764ba2;
+  }
+
+  button {
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+
+  button:hover {
+    opacity: 0.92;
+  }
+
+  button:active {
+    transform: scale(0.98);
+  }
+
+  .error {
+    color: #d9364f;
+    font-size: 13px;
+    margin-top: -12px;
+    margin-bottom: 14px;
+    display: none;
+  }
+
+  .result {
+    margin-top: 24px;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .result .grade-letter {
+    font-size: 48px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .result .grade-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .result .grade-score {
+    font-size: 13px;
+    color: #666;
+  }
+
+  /* grade color themes */
+  .grade-A { background: #e6f9ee; }
+  .grade-A .grade-letter, .grade-A .grade-name { color: #1e9e5a; }
+
+  .grade-B { background: #e8f2fe; }
+  .grade-B .grade-letter, .grade-B .grade-name { color: #2673d6; }
+
+  .grade-C { background: #fef8e4; }
+  .grade-C .grade-letter, .grade-C .grade-name { color: #c99a1a; }
+
+  .grade-D { background: #fff0e0; }
+  .grade-D .grade-letter, .grade-D .grade-name { color: #d97a1f; }
+
+  .grade-E { background: #fde9e9; }
+  .grade-E .grade-letter, .grade-E .grade-name { color: #d1483f; }
+
+  .grade-F { background: #fbe4e6; }
+  .grade-F .grade-letter, .grade-F .grade-name { color: #c31432; }
+
+  table.scale {
+    width: 100%;
+    margin-top: 24px;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  table.scale th, table.scale td {
+    text-align: center;
+    padding: 6px 4px;
+    border-bottom: 1px solid #eee;
+    color: #666;
+  }
+
+  table.scale th {
+    color: #333;
+    font-weight: 700;
+  }
+
+  .back-btn {
+    width: 100%;
+    margin-top: 12px;
+    background: #fff;
+    color: #764ba2;
+    border: 2px solid #764ba2;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Student Grading System</h1>
+  <p class="subtitle">Enter details to calculate the grade</p>
+
+  <label for="name">Student Name</label>
+  <input type="text" id="name" placeholder="e.g. John Doe">
+  <div class="error" id="nameError">Please enter a valid name (letters and spaces only).</div>
+
+  <label for="marks">Marks (0 - 100)</label>
+  <input type="number" id="marks" placeholder="e.g. 85" min="0" max="100">
+  <div class="error" id="errorMsg">Please enter a valid mark between 0 and 100.</div>
+
+  <button onclick="calculateGrade()">Calculate Grade</button>
+  <button class="back-btn" onclick="window.location.href='index.html'">&larr; Back</button>
+
+  <div class="result" id="result">
+    <div class="grade-letter" id="gradeLetter"></div>
+    <div class="grade-name" id="gradeName"></div>
+    <div class="grade-score" id="gradeScore"></div>
+  </div>
+
+  <table class="scale">
+    <tr><th>Marks</th><th>Grade</th></tr>
+    <tr><td>80 - 100</td><td>A</td></tr>
+    <tr><td>70 - 79</td><td>B</td></tr>
+    <tr><td>60 - 69</td><td>C</td></tr>
+    <tr><td>50 - 59</td><td>D</td></tr>
+    <tr><td>40 - 49</td><td>E</td></tr>
+    <tr><td>Below 40</td><td>Fail</td></tr>
+  </table>
+</div>
+
+<script>
+  function getGrade(marks) {
+    if (marks >= 80) return { letter: "A", name: "Excellent", css: "grade-A" };
+    if (marks >= 70) return { letter: "B", name: "Very Good", css: "grade-B" };
+    if (marks >= 60) return { letter: "C", name: "Good", css: "grade-C" };
+    if (marks >= 50) return { letter: "D", name: "Satisfactory", css: "grade-D" };
+    if (marks >= 40) return { letter: "E", name: "Pass", css: "grade-E" };
+    return { letter: "F", name: "Fail", css: "grade-F" };
+  }
+
+  function calculateGrade() {
+    const nameInput = document.getElementById("name");
+    const marksInput = document.getElementById("marks");
+    const nameError = document.getElementById("nameError");
+    const errorMsg = document.getElementById("errorMsg");
+    const resultBox = document.getElementById("result");
+
+    const studentName = nameInput.value.trim();
+    const namePattern = /^[A-Za-z\s.'-]+$/;
+
+    // Name is optional, but if something was typed it must look like a name
+    if (studentName !== "" && !namePattern.test(studentName)) {
+      nameError.style.display = "block";
+      resultBox.style.display = "none";
+      return;
+    }
+    nameError.style.display = "none";
+
+    const marks = parseFloat(marksInput.value);
+
+    if (marksInput.value.trim() === "" || isNaN(marks) || marks < 0 || marks > 100) {
+      errorMsg.style.display = "block";
+      resultBox.style.display = "none";
+      return;
+    }
+    errorMsg.style.display = "none";
+
+    const grade = getGrade(marks);
+    const displayName = studentName || "Student";
+
+    // reset classes then apply the right one
+    resultBox.className = "result " + grade.css;
+    resultBox.style.display = "block";
+
+    document.getElementById("gradeLetter").textContent = grade.letter;
+    document.getElementById("gradeName").textContent = grade.name;
+    document.getElementById("gradeScore").textContent =
+      displayName + " scored " + marks + " marks";
+  }
+
+  // allow pressing Enter to submit
+  document.getElementById("marks").addEventListener("keyup", function(e) {
+    if (e.key === "Enter") calculateGrade();
+  });
+</script>
+
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker registered:', reg.scope))
+        .catch(err => console.log('Service Worker registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2b6e77">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Measurement Converter</title>
+<style>
+  :root{
+    --ink:#1f2933;
+    --paper:#f6f4ef;
+    --line:#d8d2c4;
+    --accent:#2b6e77;
+    --accent-soft:#e4eeee;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Georgia','Times New Roman',serif;
+    background:var(--paper);
+    color:var(--ink);
+    padding:60px 20px;
+  }
+  .panel{
+    max-width:560px;
+    margin:0 auto;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:30px 34px;
+  }
+  h1{
+    font-size:24px;
+    font-weight:600;
+    margin-top:0;
+    margin-bottom:22px;
+    font-family:Arial, sans-serif;
+    color:var(--accent);
+    border-bottom:2px solid var(--accent-soft);
+    padding-bottom:10px;
+  }
+  .row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    margin-bottom:16px;
+    font-family:Arial, sans-serif;
+    font-size:15px;
+  }
+  .row label{
+    min-width:100px;
+  }
+  input[type="number"]{
+    flex:1 1 140px;
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    font-size:15px;
+  }
+  select{
+    padding:8px 10px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    font-size:15px;
+    background:#fff;
+  }
+  button{
+    padding:9px 20px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    font-size:15px;
+    cursor:pointer;
+    font-family:Arial, sans-serif;
+  }
+  button:hover{
+    background:#215058;
+  }
+  .result{
+    margin-top:6px;
+    font-family:Arial, sans-serif;
+    font-size:16px;
+    background:var(--accent-soft);
+    border-radius:4px;
+    padding:12px 14px;
+    min-height:20px;
+  }
+  .result b{
+    color:var(--accent);
+  }
+  .error-msg{
+    color:#a32d2d;
+    font-family:Arial, sans-serif;
+    font-size:13px;
+    margin-top:-8px;
+    margin-bottom:14px;
+    display:none;
+  }
+  .back-row{
+    margin-top:22px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+  }
+  .back-btn{
+    background:#fff;
+    color:var(--accent);
+    border:1px solid var(--accent);
+  }
+  .back-btn:hover{
+    background:var(--accent-soft);
+  }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <h1>Measurement Converter</h1>
+
+  <div class="row">
+    <label for="typeSelect">Type:</label>
+    <select id="typeSelect" onchange="populateUnits()">
+      <option value="length">Length</option>
+      <option value="height">Height</option>
+      <option value="temperature">Temperature</option>
+      <option value="area">Area</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <label for="inputValue">Enter value:</label>
+    <input type="number" id="inputValue" placeholder="e.g. 3" step="any">
+  </div>
+
+  <div class="row">
+    <label for="fromUnit">From:</label>
+    <select id="fromUnit"></select>
+    <label for="toUnit">To:</label>
+    <select id="toUnit"></select>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="row">
+    <button onclick="convert()">Submit</button>
+  </div>
+
+  <div class="result" id="result"></div>
+
+  <div class="back-row">
+    <button class="back-btn" onclick="window.location.href='index.html'">&larr; Back</button>
+  </div>
+</div>
+
+<script>
+// Conversion factors relative to a base unit for each measurement type.
+// Length and Height use the same physical units (base = meters).
+var unitData = {
+  length: {
+    base: "m",
+    units: {
+      "in": { label: "Inch", factor: 0.0254 },
+      "cm": { label: "Centimeter", factor: 0.01 },
+      "m":  { label: "Meter", factor: 1 },
+      "ft": { label: "Foot", factor: 0.3048 },
+      "mi": { label: "Mile", factor: 1609.344 },
+      "km": { label: "Kilometer", factor: 1000 }
+    }
+  },
+  height: {
+    base: "cm",
+    units: {
+      "in": { label: "Inch", factor: 2.54 },
+      "cm": { label: "Centimeter", factor: 1 },
+      "m":  { label: "Meter", factor: 100 },
+      "ft": { label: "Foot", factor: 30.48 }
+    }
+  },
+  temperature: {
+    special: true,
+    units: {
+      "C": { label: "Celsius" },
+      "F": { label: "Fahrenheit" },
+      "K": { label: "Kelvin" }
+    }
+  },
+  area: {
+    base: "sqm",
+    units: {
+      "sqft":    { label: "Square Feet", factor: 0.09290304 },
+      "sqm":     { label: "Square Meters", factor: 1 },
+      "acre":    { label: "Acres", factor: 4046.8564224 },
+      "sqmi":    { label: "Square Miles", factor: 2589988.110336 },
+      "hectare": { label: "Hectares", factor: 10000 }
+    }
+  }
+};
+
+function populateUnits() {
+  var type = document.getElementById("typeSelect").value;
+  var fromSelect = document.getElementById("fromUnit");
+  var toSelect = document.getElementById("toUnit");
+
+  fromSelect.innerHTML = "";
+  toSelect.innerHTML = "";
+
+  var units = unitData[type].units;
+  var keys = Object.keys(units);
+
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var label = units[key].label;
+
+    fromSelect.innerHTML += "<option value='" + key + "'>" + label + "</option>";
+    toSelect.innerHTML += "<option value='" + key + "'>" + label + "</option>";
+  }
+
+  // Default "to" selection to the second unit, if available
+  if (keys.length > 1) {
+    toSelect.value = keys[1];
+  }
+
+  document.getElementById("result").innerHTML = "";
+}
+
+function toCelsius(value, unit) {
+  if (unit === "C") return value;
+  if (unit === "F") return (value - 32) * 5 / 9;
+  if (unit === "K") return value - 273.15;
+}
+
+function fromCelsius(celsius, unit) {
+  if (unit === "C") return celsius;
+  if (unit === "F") return (celsius * 9 / 5) + 32;
+  if (unit === "K") return celsius + 273.15;
+}
+
+function convert() {
+  var type = document.getElementById("typeSelect").value;
+  var input = document.getElementById("inputValue").value;
+  var fromUnit = document.getElementById("fromUnit").value;
+  var toUnit = document.getElementById("toUnit").value;
+  var resultBox = document.getElementById("result");
+  var errorBox = document.getElementById("errorMsg");
+
+  // --- Validation ---
+  errorBox.style.display = "none";
+  errorBox.innerHTML = "";
+  resultBox.innerHTML = "";
+
+  if (input.trim() === "") {
+    errorBox.innerHTML = "Please enter a value to convert.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  var value = parseFloat(input);
+
+  if (isNaN(value)) {
+    errorBox.innerHTML = "That doesn't look like a number. Please enter a numeric value.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  if (type === "area" && value < 0) {
+    errorBox.innerHTML = "Area cannot be negative.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  if (type === "length" && value < 0) {
+    errorBox.innerHTML = "Length cannot be negative.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  if (type === "height" && value < 0) {
+    errorBox.innerHTML = "Height cannot be negative.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  if (type === "temperature" && fromUnit === "K" && value < 0) {
+    errorBox.innerHTML = "Kelvin temperature cannot be below 0.";
+    errorBox.style.display = "block";
+    return;
+  }
+
+  var result;
+  var fromLabel = unitData[type].units[fromUnit].label;
+  var toLabel = unitData[type].units[toUnit].label;
+
+  if (unitData[type].special) {
+    // Temperature: no simple factor, uses formulas
+    var celsius = toCelsius(value, fromUnit);
+    result = fromCelsius(celsius, toUnit);
+    resultBox.innerHTML =
+      value + " " + fromLabel + " = <b>" + result.toFixed(2) + " " + toLabel + "</b>";
+  } else {
+    // Length, Height, Area: convert through the base unit
+    var fromFactor = unitData[type].units[fromUnit].factor;
+    var toFactor = unitData[type].units[toUnit].factor;
+    var baseValue = value * fromFactor;
+    result = baseValue / toFactor;
+    resultBox.innerHTML =
+      value + " " + fromLabel + " = <b>" + result.toFixed(4) + " " + toLabel + "</b>";
+  }
+}
+
+// Initialize unit dropdowns on page load
+populateUnits();
+</script>
+
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker registered:', reg.scope))
+        .catch(err => console.log('Service Worker registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f6e56">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Calculate Change</title>
+<style>
+  :root {
+    --ink: #1c1c1a;
+    --paper: #f6f3ec;
+    --card: #ffffff;
+    --line: #d8d3c4;
+    --accent: #0f6e56;
+    --accent-dark: #085041;
+    --note-bg: #e1f5ee;
+    --coin-bg: #faeeda;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 2rem 2.25rem 2.25rem;
+    width: 100%;
+    max-width: 460px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem;
+    letter-spacing: -0.01em;
+  }
+
+  form {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  label { display: none; }
+
+  input[type="number"] {
+    flex: 1;
+    font-size: 1rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+  }
+
+  input[type="number"]:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(15,110,86,0.12);
+  }
+
+  button {
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 0.6rem 1.25rem;
+    border: none;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  button:hover { background: var(--accent-dark); }
+  button:active { transform: scale(0.98); }
+
+  .field-note {
+    font-size: 0.8rem;
+    color: #7a7768;
+    margin: 0 0 1.25rem;
+  }
+
+  .result-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+
+  .result-row.note { background: var(--note-bg); }
+  .result-row.coin { background: var(--coin-bg); }
+
+  .result-row .count,
+  .result-row .denom { font-weight: 600; }
+
+  .empty, .hint {
+    color: #8a8778;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.1rem;
+  }
+
+  .error {
+    color: #a32d2d;
+    font-size: 0.9rem;
+    padding: 0.5rem 0.1rem;
+  }
+
+  .total-row {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #5c5a4e;
+  }
+
+  .back-row {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .back-btn {
+    width: 100%;
+    background: #fff;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+
+  .back-btn:hover {
+    background: var(--note-bg);
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Calculate Change</h1>
+
+  <form id="change-form">
+    <label for="amount">Enter amount</label>
+    <input type="number" id="amount" name="amount" placeholder="e.g. 874" min="0" step="1" required autofocus>
+    <button type="submit">Submit</button>
+  </form>
+  <p class="field-note">Notes: $1000, $500, $100, $50, $20 &nbsp;·&nbsp; Coins: $10, $5, $2, $1</p>
+
+  <div class="result-list" id="result-list">
+    <div class="hint">Type any amount above and click Submit to see the breakdown.</div>
+  </div>
+  <div class="total-row" id="total-row" style="display:none;">
+    <span>Total pieces</span>
+    <span id="total-pieces"></span>
+  </div>
+
+  <div class="back-row">
+    <button class="back-btn" type="button" onclick="window.location.href='index.html'">&larr; Back</button>
+  </div>
+</div>
+
+<script>
+  // Denominations exactly as given in the assignment instructions
+  const denominations = [
+    { value: 1000, type: 'note' },
+    { value: 500,  type: 'note' },
+    { value: 100,  type: 'note' },
+    { value: 50,   type: 'note' },
+    { value: 20,   type: 'note' },
+    { value: 10,   type: 'coin' },
+    { value: 5,    type: 'coin' },
+    { value: 2,    type: 'coin' },
+    { value: 1,    type: 'coin' }
+  ];
+
+  // Greedy loop: for every denomination, take as many as fit, then move on
+  function calculateChange(amount) {
+    let remaining = Math.round(amount);
+    const breakdown = [];
+
+    for (const denom of denominations) {
+      const count = Math.floor(remaining / denom.value);
+      if (count > 0) {
+        breakdown.push({ count, value: denom.value, type: denom.type });
+        remaining -= count * denom.value;
+      }
+    }
+
+    return breakdown;
+  }
+
+  function render(amount) {
+    const list = document.getElementById('result-list');
+    const totalRow = document.getElementById('total-row');
+    const totalPieces = document.getElementById('total-pieces');
+    list.innerHTML = '';
+
+    if (isNaN(amount)) {
+      list.innerHTML = '<div class="error">Please enter a number.</div>';
+      totalRow.style.display = 'none';
+      return;
+    }
+
+    if (amount < 0) {
+      list.innerHTML = '<div class="error">Please enter a valid non-negative amount.</div>';
+      totalRow.style.display = 'none';
+      return;
+    }
+
+    if (amount === 0) {
+      list.innerHTML = '<div class="empty">No change needed for $0.</div>';
+      totalRow.style.display = 'none';
+      return;
+    }
+
+    const breakdown = calculateChange(amount);
+    let total = 0;
+
+    breakdown.forEach(item => {
+      total += item.count;
+      const row = document.createElement('div');
+      row.className = 'result-row ' + item.type;
+      row.innerHTML =
+        '<span class="count">' + item.count + '</span>' +
+        '<span class="denom">of $' + item.value + '</span>';
+      list.appendChild(row);
+    });
+
+    totalPieces.textContent = total;
+    totalRow.style.display = 'flex';
+  }
+
+  document.getElementById('change-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('amount').value);
+    render(amount);
+  });
+</script>
+
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker registered:', reg.scope))
+        .catch(err => console.log('Service Worker registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>
